@@ -1,4 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import * as fs from 'fs';
+import * as path from 'path';
+import { IMission } from './mission.interface';
 
 @Injectable()
 export class MissionService {
@@ -10,6 +13,23 @@ export class MissionService {
     { id: 5, codename: 'ECHO_FALLS', status: 'COMPLETED' },
     { id: 6, codename: 'GHOST_RIDER', status: 'COMPLETED' },
   ];
+
+  findAll(): IMission[] {
+    const filePath = path.join(process.cwd(), 'data', 'missions.json');
+    const rawData = fs.readFileSync(filePath, 'utf-8');
+    const missions: IMission[] = JSON.parse(rawData);
+
+    return missions.map((m) => {
+      let duration = -1;
+      if (m.endDate) {
+        const start = new Date(m.startDate);
+        const end = new Date(m.endDate);
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        duration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+      return { ...m, durationDays: duration };
+    });
+  }
 
   getSummary() {
     const res = {

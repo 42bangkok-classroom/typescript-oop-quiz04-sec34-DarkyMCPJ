@@ -1,5 +1,5 @@
 import { IMission } from './mission.interface';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import * as fs from 'fs';
 
 @Injectable()
@@ -40,5 +40,20 @@ export class MissionService {
           (1000 * 60 * 60 * 24)
         : -1,
     }));
+  }
+
+  findOne(id: string, clearance: string) {
+    const raw = fs.readFileSync('data/missions.json', 'utf8');
+    const jsonMission = JSON.parse(raw) as IMission[];
+    const found = jsonMission.find((mission) => mission.id === id);
+    let res = {};
+    if (!found) throw NotFoundException;
+    const risk = found.riskLevel;
+    if (risk === 'HIGH' || risk === 'CRITICAL') {
+      if (clearance !== 'TOP_SECRET') {
+        res = { ...found, targetName: '***REDACTED***' };
+      }
+    }
+    return res;
   }
 }

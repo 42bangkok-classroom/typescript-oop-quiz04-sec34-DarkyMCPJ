@@ -19,7 +19,7 @@ export class MissionController {
   findOne(@Param('id') id: string, @Query('clearance') clearance: string) {
     return this.missionService.findOne(id, clearance);
   }
-  
+
   @Post()
   create(@Body() body: CreateMissionDto) {
     return this.missionService.create(body);

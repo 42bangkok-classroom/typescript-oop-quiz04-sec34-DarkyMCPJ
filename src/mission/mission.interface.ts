@@ -5,5 +5,6 @@ export interface IMission {
   targetName: string;
   riskLevel: string;
   startDate: string;
-  endDate: string;
+  endDate: string | null; 
+  durationDays?: number;  
 }

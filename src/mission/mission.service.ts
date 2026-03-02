@@ -1,6 +1,7 @@
-import { IMission } from './mission.interface';
 import { Injectable } from '@nestjs/common';
+import { IMission } from './mission.interface';
 import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class MissionService {
@@ -12,6 +13,29 @@ export class MissionService {
     { id: 5, codename: 'ECHO_FALLS', status: 'COMPLETED' },
     { id: 6, codename: 'GHOST_RIDER', status: 'COMPLETED' },
   ];
+
+findAll(): IMission[] {
+    const filePath = path.join(process.cwd(), 'data', 'missions.json');
+    const rawData = fs.readFileSync(filePath, 'utf-8');
+    const missions: IMission[] = JSON.parse(rawData);
+
+    return missions.map((mission) => {
+      let durationDays = -1;
+
+      if (mission.endDate) {
+        const start = new Date(mission.startDate);
+        const end = new Date(mission.endDate);
+        
+        const diffInMs = end.getTime() - start.getTime();
+        durationDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+      }
+
+      return {
+        ...mission,
+        durationDays: durationDays,
+      };
+    });
+  }
 
   getSummary() {
     const activeCount = this.missions.filter(

@@ -56,4 +56,31 @@ export class MissionService {
     }
     return found;
   }
+
+  create(body: any) {
+    const raw = fs.readFileSync('data/missions.json', 'utf8');
+    const jsonMission = JSON.parse(raw) as IMission[];
+
+    const last = jsonMission[jsonMission.length - 1];
+    const lastIdNum = last ? Number(last.id) : 0;
+    const nextId = String(lastIdNum + 1);
+
+    const newMission: IMission = {
+      id: nextId,
+      codename: body.codename,
+      status: 'ACTIVE',
+      riskLevel: body.riskLevel,
+      targetName: body.targetName,
+      startDate: body.startDate,
+      endDate: null,
+    } as any;
+
+    jsonMission.push(newMission as any);
+    fs.writeFileSync(
+      'data/missions.json',
+      JSON.stringify(jsonMission, null, 2),
+      'utf8',
+    );
+    return newMission;
+  }
 }

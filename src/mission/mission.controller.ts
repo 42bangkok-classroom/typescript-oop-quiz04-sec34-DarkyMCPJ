@@ -6,11 +6,11 @@ import { IMission } from './mission.interface';
 export class MissionController {
   constructor(private readonly missionService: MissionService) {}
 
-@Get()
+  @Get()
   findAll(): IMission[] {
     return this.missionService.findAll();
   }
-  
+
   @Get('summary')
   getSummary() {
     return this.missionService.getSummary();

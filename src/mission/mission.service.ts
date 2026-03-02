@@ -46,14 +46,14 @@ export class MissionService {
     const raw = fs.readFileSync('data/missions.json', 'utf8');
     const jsonMission = JSON.parse(raw) as IMission[];
     const found = jsonMission.find((mission) => mission.id === id);
-    let res = {};
-    if (!found) throw NotFoundException;
+    if (!found) throw new NotFoundException();
     const risk = found.riskLevel;
-    if (risk === 'HIGH' || risk === 'CRITICAL') {
-      if (clearance !== 'TOP_SECRET') {
-        res = { ...found, targetName: '***REDACTED***' };
-      }
+    if (
+      (risk === 'HIGH' || risk === 'CRITICAL') &&
+      clearance !== 'TOP_SECRET'
+    ) {
+      found.targetName = '***REDACTED***';
     }
-    return res;
+    return found;
   }
 }

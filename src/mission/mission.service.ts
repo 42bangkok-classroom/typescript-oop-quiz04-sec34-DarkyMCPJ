@@ -29,8 +29,16 @@ export class MissionService {
       FAILED: failedCount,
     };
   }
-  findAll(): IMission[] {
-    const raw = fs.readFile('data/missions.json', 'utf-8');
-    return JSON.parse(raw) as IMission[];
+  findAll() {
+    const raw = fs.readFileSync('data/missions.json', 'utf8');
+    const jsonMission = JSON.parse(raw) as IMission[];
+    return jsonMission.map((mission) => ({
+      ...mission,
+      durationDays: mission.endDate
+        ? (new Date(mission.endDate).getTime() -
+            new Date(mission.startDate).getTime()) /
+          (1000 * 60 * 60 * 24)
+        : -1,
+    }));
   }
 }

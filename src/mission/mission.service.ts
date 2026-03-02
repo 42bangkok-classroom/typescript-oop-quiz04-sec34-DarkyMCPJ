@@ -1,86 +1,102 @@
-import { IMission } from './mission.interface';
-import { Injectable, NotFoundException } from '@nestjs/common';
-import * as fs from 'fs';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { IMission } from "./mission.interface";
+import * as fs from "fs";
 
 @Injectable()
 export class MissionService {
-  private readonly missions = [
-    { id: 1, codename: 'OPERATION_STORM', status: 'ACTIVE' },
-    { id: 2, codename: 'SILENT_SNAKE', status: 'COMPLETED' },
-    { id: 3, codename: 'RED_DAWN', status: 'FAILED' },
-    { id: 4, codename: 'BLACKOUT', status: 'ACTIVE' },
-    { id: 5, codename: 'ECHO_FALLS', status: 'COMPLETED' },
-    { id: 6, codename: 'GHOST_RIDER', status: 'COMPLETED' },
+  private readonly mission = [
+    { id: 1, codename: "OPERATION_STORM", status: "ACTIVE" },
+    { id: 2, codename: "SILENT_SNAKE", status: "COMPLETED" },
+    { id: 3, codename: "RED_DAWN", status: "FAILED" },
+    { id: 4, codename: "BLACKOUT", status: "ACTIVE" },
+    { id: 5, codename: "ECHO_FALLS", status: "COMPLETED" },
+    { id: 6, codename: "GHOST_RIDER", status: "COMPLETED" },
   ];
 
   getSummary() {
-    const activeCount = this.missions.filter(
-      (m) => m.status === 'ACTIVE',
-    ).length;
-    const completeCount = this.missions.filter(
-      (m) => m.status === 'COMPLETED',
-    ).length;
-    const failedCount = this.missions.filter(
-      (m) => m.status === 'FAILED',
-    ).length;
-    return {
-      ACTIVE: activeCount,
-      COMPLETED: completeCount,
-      FAILED: failedCount,
+    const res = {
+      ACTIVE: 0,
+      COMPLETED: 0,
+      FAILED: 0,
     };
+    for (let i = 0; i < this.mission.length; i++) {
+      const data = this.mission[i];
+      if (data.status in res) {
+        res[data.status as keyof typeof res]++;
+      }
+    }
+    return res;
   }
+
+  create(
+    mission: Omit<IMission, "id" | "status" | "endDate"> &
+      Partial<Pick<IMission, "id" | "status" | "endDate">>,
+  ) {
+    const data = fs.readFileSync("data/missions.json", "utf8");
+    const missions = JSON.parse(data) as IMission[];
+    const latestId =
+      missions.length > 0 ? Number(missions[missions.length - 1].id) : 0;
+    const newMission: IMission = {
+      ...mission,
+      id: String(latestId + 1),
+      status: "ACTIVE",
+        endDate: "",
+    };
+
+    missions.push(newMission);
+    fs.writeFileSync("data/missions.json", JSON.stringify(missions, null, 2));
+
+    return newMission;
+  }
+
   findAll() {
-    const raw = fs.readFileSync('data/missions.json', 'utf8');
-    const jsonMission = JSON.parse(raw) as IMission[];
-    return jsonMission.map((mission) => ({
+    const data = fs.readFileSync("data/missions.json", "utf8");
+    const missions = JSON.parse(data) as IMission[];
+    return missions.map((mission) => ({
       ...mission,
       durationDays: mission.endDate
         ? (new Date(mission.endDate).getTime() -
             new Date(mission.startDate).getTime()) /
-          (1000 * 60 * 60 * 24)
+          86400000
         : -1,
     }));
   }
 
-  findOne(id: string, clearance: string) {
-    const raw = fs.readFileSync('data/missions.json', 'utf8');
-    const jsonMission = JSON.parse(raw) as IMission[];
-    const found = jsonMission.find((mission) => mission.id === id);
-    if (!found) throw new NotFoundException();
-    const risk = found.riskLevel;
-    if (
-      (risk === 'HIGH' || risk === 'CRITICAL') &&
-      clearance !== 'TOP_SECRET'
-    ) {
-      found.targetName = '***REDACTED***';
+  remove(id: string) {
+    const data = fs.readFileSync("data/missions.json", "utf8");
+    const missions = JSON.parse(data) as IMission[];
+    const missionIndex = missions.findIndex((mission) => mission.id === id);
+
+    if (missionIndex === -1) {
+      throw new NotFoundException("Not Found");
     }
-    return found;
+
+    missions.splice(missionIndex, 1);
+    fs.writeFileSync("data/missions.json", JSON.stringify(missions, null, 2));
+
+    return {
+      message: `Mission ID ${id} has been successfully deleted.`,
+    };
   }
 
-  create(body: any) {
-    const raw = fs.readFileSync('data/missions.json', 'utf8');
-    const jsonMission = JSON.parse(raw) as IMission[];
-
-    const last = jsonMission[jsonMission.length - 1];
-    const lastIdNum = last ? Number(last.id) : 0;
-    const nextId = String(lastIdNum + 1);
-
-    const newMission: IMission = {
-      id: nextId,
-      codename: body.codename,
-      status: 'ACTIVE',
-      riskLevel: body.riskLevel,
-      targetName: body.targetName,
-      startDate: body.startDate,
-      endDate: null,
-    } as any;
-
-    jsonMission.push(newMission as any);
-    fs.writeFileSync(
-      'data/missions.json',
-      JSON.stringify(jsonMission, null, 2),
-      'utf8',
-    );
-    return newMission;
+  findOne(id: string, clearance: string = "STANDARD") {
+    const data = fs.readFileSync("data/missions.json", "utf8");
+    const missions = JSON.parse(data) as IMission[];
+    const mission = missions.find((m) => m.id === id)!;
+    if (!mission) {
+      throw new NotFoundException("for unknown id");
+    } else if (mission.riskLevel == "HIGH") {
+      if (clearance == "SECRET") {
+        return {
+          ...mission,
+          targetName: "***REDACTED***",
+        };
+      } else if (clearance == "TOP_SECRET") {
+        return mission;
+      } else {
+        throw new NotFoundException("for insufficient clearance");
+      }
+    }
+    return mission;
   }
 }

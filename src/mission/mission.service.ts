@@ -5,7 +5,7 @@ import { IMission } from './mission.interface';
 
 @Injectable()
 export class MissionService {
-  private readonly mission = [
+  private readonly missions = [
     { id: 1, codename: 'OPERATION_STORM', status: 'ACTIVE' },
     { id: 2, codename: 'SILENT_SNAKE', status: 'COMPLETED' },
     { id: 3, codename: 'RED_DAWN', status: 'FAILED' },
@@ -17,15 +17,15 @@ export class MissionService {
   findAll(): IMission[] {
     const filePath = path.join(process.cwd(), 'data', 'missions.json');
     const rawData = fs.readFileSync(filePath, 'utf-8');
-    const missions: IMission[] = JSON.parse(rawData);
+    const missionsData: IMission[] = JSON.parse(rawData);
 
-    return missions.map((m) => {
+    return missionsData.map((m) => {
       let duration = -1;
       if (m.endDate) {
         const start = new Date(m.startDate);
         const end = new Date(m.endDate);
         const diffTime = Math.abs(end.getTime() - start.getTime());
-        duration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        duration = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
       }
       return { ...m, durationDays: duration };
     });
@@ -38,8 +38,8 @@ export class MissionService {
       FAILED: 0,
     };
 
-    for (let i = 0; i < this.mission.length; i++) {
-      const data = this.mission[i];
+    for (let i = 0; i < this.missions.length; i++) {
+      const data: any = this.missions[i]; 
       if (data.status in res) {
         res[data.status as keyof typeof res]++;
       }
